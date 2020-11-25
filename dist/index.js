@@ -1593,7 +1593,7 @@ async function run() {
             "-o",
             "coverage/coverage.profdata",
         ]);
-        const objects = [...(await findTargets()), ...(await findDoctests(doctestDir))].map((obj) => `-object=${obj}`);
+        const objects = await filterObjects(tooldir, [...(await findTargets()), ...(await findDoctests(doctestDir))]);
         const lcovFile = fs__WEBPACK_IMPORTED_MODULE_3___default().createWriteStream(path__WEBPACK_IMPORTED_MODULE_5___default().join("coverage", "coverage.lcov"));
         // WTF? https://github.com/actions/toolkit/issues/649
         const llvmCov = path__WEBPACK_IMPORTED_MODULE_5___default().join(tooldir, "llvm-cov");
@@ -1611,6 +1611,9 @@ async function run() {
                 stdout(data) {
                     lcovFile.write(data);
                 },
+                stderr(data) {
+                    process.stderr.write(data);
+                },
             },
         });
         lcovFile.close();
@@ -1621,6 +1624,18 @@ async function run() {
     }
 }
 run();
+async function filterObjects(tooldir, objects) {
+    const output = [];
+    for (const obj of objects) {
+        try {
+            // this will error out if one of the objects is not a valid object file
+            await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec(path__WEBPACK_IMPORTED_MODULE_5___default().join(tooldir, "llvm-readobj"), [obj], { silent: true });
+            output.push(`-object=${obj}`);
+        }
+        catch { }
+    }
+    return output;
+}
 async function findProfRaw(profrawDir) {
     const files = [];
     for await (const name of walk(profrawDir)) {

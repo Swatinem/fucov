@@ -38,7 +38,7 @@ async function run() {
       "coverage/coverage.profdata",
     ]);
 
-    const objects = [...(await findTargets()), ...(await findDoctests(doctestDir))].map((obj) => `-object=${obj}`);
+    const objects = await filterObjects(tooldir, [...(await findTargets()), ...(await findDoctests(doctestDir))]);
 
     const lcovFile = fs.createWriteStream(path.join("coverage", "coverage.lcov"));
 
@@ -58,6 +58,9 @@ async function run() {
         stdout(data) {
           lcovFile.write(data);
         },
+        stderr(data) {
+          process.stderr.write(data);
+        },
       },
     });
     lcovFile.close();
@@ -68,6 +71,18 @@ async function run() {
 }
 
 run();
+
+async function filterObjects(tooldir: string, objects: Array<string>): Promise<Array<string>> {
+  const output = [];
+  for (const obj of objects) {
+    try {
+      // this will error out if one of the objects is not a valid object file
+      await exec.exec(path.join(tooldir, "llvm-readobj"), [obj], { silent: true });
+      output.push(`-object=${obj}`);
+    } catch {}
+  }
+  return output;
+}
 
 async function findProfRaw(profrawDir: string): Promise<Array<string>> {
   const files = [];
