@@ -14,5 +14,5 @@ pub fn called_in_doctest() -> StructB {
 #[test]
 fn tests_a() {
     let b = StructB::default();
-    assert_eq!(crate_a::generic_fn("err", b), Err(b),);
+    assert_eq!(crate_a::generic_fn("err", b), Err(b));
 }
