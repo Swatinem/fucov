@@ -1567,6 +1567,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+const PROFILE = "+nightly";
 process.on("uncaughtException", (e) => {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`[warning] ${e.message}`);
 });
@@ -1578,9 +1579,9 @@ async function run() {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("RUSTDOCFLAGS", `-Z instrument-coverage -Z unstable-options --persist-doctests=${doctestDir}`);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("LLVM_PROFILE_FILE", path__WEBPACK_IMPORTED_MODULE_5___default().join(profrawDir, "%p.profraw"));
     try {
-        const libdir = await getCmdOutput("rustc", ["+nightly", "--print", "target-libdir"]);
+        const libdir = await getCmdOutput("rustc", [PROFILE, "--print", "target-libdir"]);
         const tooldir = path__WEBPACK_IMPORTED_MODULE_5___default().join(path__WEBPACK_IMPORTED_MODULE_5___default().dirname(libdir), "bin");
-        await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec("cargo", ["+nightly", "test", "--workspace", "--all-features"]);
+        await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec("cargo", [PROFILE, "test", "--workspace", "--all-features"]);
         try {
             await fs__WEBPACK_IMPORTED_MODULE_3___default().promises.mkdir("coverage");
         }
@@ -1599,6 +1600,8 @@ async function run() {
         const llvmCovArgs = [
             "export",
             "-format=lcov",
+            // "show",
+            // "-format=html",
             `-ignore-filename-regex=([\\/]rustc[\\/]|[\\/].cargo[\\/]registry[\\/])`,
             "-instr-profile=coverage/coverage.profdata",
             ...objects,
@@ -1677,7 +1680,7 @@ async function findDoctests(doctestDir) {
 }
 async function getMetaTargets() {
     const cwd = process.cwd();
-    const meta = JSON.parse(await getCmdOutput("cargo", ["+nightly", "metadata", "--all-features", "--format-version=1"]));
+    const meta = JSON.parse(await getCmdOutput("cargo", [PROFILE, "metadata", "--all-features", "--format-version=1"]));
     return meta.packages
         .filter((p) => p.manifest_path.startsWith(cwd))
         .flatMap((p) => {

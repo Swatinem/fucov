@@ -27,3 +27,10 @@ This action basically does all the steps that are described in the [unstable boo
 ```
 
 [unstable book]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/source-based-code-coverage.html
+
+## Known Issues
+
+There are a few known issues around doctests:
+
+- [ ] https://github.com/rust-lang/rust/pull/79413
+- [ ] https://github.com/rust-lang/rust/issues/79417

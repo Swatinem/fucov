@@ -1,3 +1,5 @@
+mod somemod;
+
 /// Doctests must not start at the same line :-(
 ///
 /// ```

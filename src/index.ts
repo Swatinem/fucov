@@ -5,6 +5,8 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
+const PROFILE = "+nightly";
+
 process.on("uncaughtException", (e) => {
   core.info(`[warning] ${e.message}`);
 });
@@ -19,10 +21,10 @@ async function run() {
   core.exportVariable("LLVM_PROFILE_FILE", path.join(profrawDir, "%p.profraw"));
 
   try {
-    const libdir = await getCmdOutput("rustc", ["+nightly", "--print", "target-libdir"]);
+    const libdir = await getCmdOutput("rustc", [PROFILE, "--print", "target-libdir"]);
     const tooldir = path.join(path.dirname(libdir), "bin");
 
-    await exec.exec("cargo", ["+nightly", "test", "--workspace", "--all-features"]);
+    await exec.exec("cargo", [PROFILE, "test", "--workspace", "--all-features"]);
 
     try {
       await fs.promises.mkdir("coverage");
@@ -45,6 +47,8 @@ async function run() {
     const llvmCovArgs = [
       "export",
       "-format=lcov",
+      // "show",
+      // "-format=html",
       `-ignore-filename-regex=([\\/]rustc[\\/]|[\\/].cargo[\\/]registry[\\/])`,
       "-instr-profile=coverage/coverage.profdata",
       ...objects,
@@ -138,7 +142,7 @@ interface Meta {
 async function getMetaTargets(): Promise<Array<string>> {
   const cwd = process.cwd();
   const meta: Meta = JSON.parse(
-    await getCmdOutput("cargo", ["+nightly", "metadata", "--all-features", "--format-version=1"]),
+    await getCmdOutput("cargo", [PROFILE, "metadata", "--all-features", "--format-version=1"]),
   );
 
   return meta.packages
