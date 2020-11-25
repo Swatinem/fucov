@@ -1567,7 +1567,6 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const home = os__WEBPACK_IMPORTED_MODULE_4___default().homedir();
 process.on("uncaughtException", (e) => {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`[warning] ${e.message}`);
 });
@@ -1600,7 +1599,7 @@ async function run() {
         const llvmCovArgs = [
             "export",
             "-format=lcov",
-            `-ignore-filename-regex=${path__WEBPACK_IMPORTED_MODULE_5___default().join(home, ".cargo")}`,
+            `-ignore-filename-regex=([\\/]rustc[\\/]|[\\/].cargo[\\/]registry[\\/])`,
             "-instr-profile=coverage/coverage.profdata",
             ...objects,
         ];

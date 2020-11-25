@@ -5,8 +5,6 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 
-const home = os.homedir();
-
 process.on("uncaughtException", (e) => {
   core.info(`[warning] ${e.message}`);
 });
@@ -47,7 +45,7 @@ async function run() {
     const llvmCovArgs = [
       "export",
       "-format=lcov",
-      `-ignore-filename-regex=${path.join(home, ".cargo")}`,
+      `-ignore-filename-regex=([\\/]rustc[\\/]|[\\/].cargo[\\/]registry[\\/])`,
       "-instr-profile=coverage/coverage.profdata",
       ...objects,
     ];

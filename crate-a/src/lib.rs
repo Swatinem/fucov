@@ -1,5 +1,5 @@
 /// ```
-/// assert_eq!(fucov::generic_fn("doc", "oh hai"), Ok("doctest"));
+/// assert_eq!(crate_a::generic_fn("doc", "oh hai"), Ok("doctest"));
 /// ```
 pub fn generic_fn<T>(s: &str, val: T) -> Result<&str, T> {
     match s {
