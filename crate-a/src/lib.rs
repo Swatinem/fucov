@@ -6,6 +6,7 @@ pub fn generic_fn<T>(s: &str, val: T) -> Result<&str, T> {
         "unit" => Ok("unit-test"),
         "integration" => Ok("integration-test"),
         "doc" => Ok("doctest"),
+        "foreign-doc" => Ok("doctest"),
         _ => Err(val),
     }
 }
