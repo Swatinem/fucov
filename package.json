@@ -32,6 +32,8 @@
     "typescript": "^4.1.2"
   },
   "scripts": {
-    "prepare": "ncc build --target es2020 -o dist src/index.ts"
+    "prepare": "ncc build --target es2020 -o dist src/index.ts",
+    "pretest": "npm run prepare",
+    "test": "node dist"
   }
 }
