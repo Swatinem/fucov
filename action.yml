@@ -1,0 +1,9 @@
+name: "Rust Code Coverage"
+description: "A GitHub Action that does single-action code coverage generation."
+author: "Arpad Borsos <arpad.borsos@googlemail.com>"
+runs:
+  using: "node12"
+  main: "dist/index.js"
+branding:
+  icon: "align-left"
+  color: "green"

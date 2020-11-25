@@ -1,0 +1,158 @@
+import * as core from "@actions/core";
+import * as exec from "@actions/exec";
+import * as io from "@actions/io";
+import fs from "fs";
+import os from "os";
+import path from "path";
+
+const home = os.homedir();
+
+process.on("uncaughtException", (e) => {
+  core.info(`[warning] ${e.message}`);
+});
+
+async function run() {
+  const doctestDir = path.join(os.tmpdir(), "_rustdoc");
+  const profrawDir = path.join(os.tmpdir(), "_profraw");
+
+  core.exportVariable("CARGO_INCREMENTAL", 0);
+  core.exportVariable("RUSTFLAGS", "-Z instrument-coverage");
+  core.exportVariable("RUSTDOCFLAGS", `-Z instrument-coverage -Z unstable-options --persist-doctests=${doctestDir}`);
+  core.exportVariable("LLVM_PROFILE_FILE", path.join(profrawDir, "%p.profraw"));
+
+  try {
+    const libdir = await getCmdOutput("rustc", ["+nightly", "--print", "target-libdir"]);
+    const tooldir = path.join(path.dirname(libdir), "bin");
+
+    await exec.exec("cargo", ["+nightly", "test", "--workspace", "--all-features"]);
+
+    try {
+      await fs.promises.mkdir("coverage");
+    } catch {}
+
+    await exec.exec(path.join(tooldir, "llvm-profdata"), [
+      "merge",
+      "-sparse",
+      ...(await findProfRaw(profrawDir)),
+      "-o",
+      "coverage/coverage.profdata",
+    ]);
+
+    const objects = [...(await findTargets()), ...(await findDoctests(doctestDir))].map((obj) => `-object=${obj}`);
+
+    const lcovFile = fs.createWriteStream(path.join("coverage", "coverage.lcov"));
+
+    // WTF? https://github.com/actions/toolkit/issues/649
+    const llvmCov = path.join(tooldir, "llvm-cov");
+    const llvmCovArgs = [
+      "export",
+      "-format=lcov",
+      `-ignore-filename-regex=${path.join(home, ".cargo")}`,
+      "-instr-profile=coverage/coverage.profdata",
+      ...objects,
+    ];
+    core.info(`[command]${llvmCov} ${llvmCovArgs.join(" ")}`);
+    await exec.exec(llvmCov, llvmCovArgs, {
+      silent: true,
+      listeners: {
+        stdout(data) {
+          lcovFile.write(data);
+        },
+      },
+    });
+    lcovFile.close();
+  } finally {
+    await io.rmRF(doctestDir);
+    await io.rmRF(profrawDir);
+  }
+}
+
+run();
+
+async function findProfRaw(profrawDir: string): Promise<Array<string>> {
+  const files = [];
+  for await (const name of walk(profrawDir)) {
+    const ext = path.extname(name);
+    if (ext === ".profraw") {
+      files.push(name);
+    }
+  }
+  return files;
+}
+
+async function findTargets(): Promise<Array<string>> {
+  const targets = new Set(await getMetaTargets());
+
+  const objects = [];
+  const dir = await fs.promises.opendir("./target/debug/deps");
+  for await (const dirent of dir) {
+    if (!dirent.isFile()) {
+      continue;
+    }
+    let name = dirent.name;
+    const idx = name.lastIndexOf("-");
+    if (idx !== -1) {
+      name = name.slice(0, idx);
+    }
+    const ext = path.extname(dirent.name);
+    if (targets.has(name) && (!ext || ext === ".exe")) {
+      objects.push(path.join(dir.path, dirent.name));
+    }
+  }
+  return objects;
+}
+
+async function findDoctests(doctestDir: string): Promise<Array<string>> {
+  const objects = [];
+  for await (const name of walk(doctestDir)) {
+    const ext = path.extname(name);
+    if (!ext || ext === ".exe") {
+      objects.push(name);
+    }
+  }
+  return objects;
+}
+
+interface Meta {
+  packages: Array<{
+    name: string;
+    version: string;
+    manifest_path: string;
+    targets: Array<{ name: string; doctest: boolean; test: boolean }>;
+  }>;
+}
+
+async function getMetaTargets(): Promise<Array<string>> {
+  const cwd = process.cwd();
+  const meta: Meta = JSON.parse(
+    await getCmdOutput("cargo", ["+nightly", "metadata", "--all-features", "--format-version=1"]),
+  );
+
+  return meta.packages
+    .filter((p) => p.manifest_path.startsWith(cwd))
+    .flatMap((p) => {
+      return p.targets.filter((t) => t.doctest || t.test).map((t) => t.name);
+    });
+}
+
+async function getCmdOutput(cmd: string, args: Array<string> = [], options: exec.ExecOptions = {}): Promise<string> {
+  let stdout = "";
+  await exec.exec(cmd, args, {
+    silent: true,
+    listeners: {
+      stdout(data) {
+        stdout += data.toString();
+      },
+    },
+    ...options,
+  });
+  return stdout;
+}
+
+async function* walk(dir: string): AsyncIterable<string> {
+  for await (const d of await fs.promises.opendir(dir)) {
+    const entry = path.join(dir, d.name);
+    if (d.isDirectory()) yield* walk(entry);
+    else if (d.isFile()) yield entry;
+  }
+}
