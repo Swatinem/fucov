@@ -144,7 +144,7 @@ async function getMetaTargets(): Promise<Array<string>> {
   return meta.packages
     .filter((p) => p.manifest_path.startsWith(cwd))
     .flatMap((p) => {
-      return p.targets.filter((t) => t.doctest || t.test).map((t) => t.name);
+      return p.targets.filter((t) => t.doctest || t.test).map((t) => t.name.replaceAll("-", "_"));
     });
 }
 
