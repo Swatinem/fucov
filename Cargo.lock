@@ -14,3 +14,7 @@ dependencies = [
 [[package]]
 name = "crate-c"
 version = "0.1.0"
+
+[[package]]
+name = "crate-d"
+version = "0.1.0"
