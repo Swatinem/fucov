@@ -32,5 +32,5 @@ This action basically does all the steps that are described in the [unstable boo
 
 There are a few known issues around doctests:
 
-- [ ] https://github.com/rust-lang/rust/pull/79413
+- [x] https://github.com/rust-lang/rust/pull/79413
 - [ ] https://github.com/rust-lang/rust/issues/79417

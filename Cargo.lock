@@ -10,3 +10,7 @@ version = "0.1.0"
 dependencies = [
  "crate-a",
 ]
+
+[[package]]
+name = "crate-c"
+version = "0.1.0"

@@ -1,7 +1,3 @@
-mod somemod;
-
-/// Doctests must not start at the same line :-(
-///
 /// ```
 /// assert_eq!(crate_a::generic_fn("doc", "oh hai"), Ok("doctest"));
 /// ```
