@@ -37,4 +37,4 @@ There are a few known issues around doctests:
 - [ ] https://github.com/rust-lang/rust/issues/79417
 - [ ] https://github.com/rust-lang/rust/issues/79764
 - [ ] https://github.com/rust-lang/rust/pull/79770
-- ~~[x] https://github.com/rust-lang/cargo/pull/8954~~
+- [x] ~~https://github.com/rust-lang/cargo/pull/8954~~
