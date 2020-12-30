@@ -8,3 +8,4 @@ coverage:
 comment:
   layout: "diff"
   require_changes: true
+  after_n_builds: 3

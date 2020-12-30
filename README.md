@@ -26,6 +26,10 @@ This action basically does all the steps that are described in the [unstable boo
     directory: coverage
 ```
 
+This repo has some testcases included, which yield the following coverage results:
+
+[![codecov](https://codecov.io/gh/Swatinem/fucov/branch/v1/graph/badge.svg?token=XSTLrgtVxJ)](https://codecov.io/gh/Swatinem/fucov)
+
 [unstable book]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/source-based-code-coverage.html
 
 ## Known Issues
