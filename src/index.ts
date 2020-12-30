@@ -40,7 +40,8 @@ async function run() {
 
     const objects = await filterObjects(tooldir, [...(await findTargets()), ...(await findDoctests(doctestDir))]);
 
-    const lcovFile = fs.createWriteStream(path.join("coverage", "coverage.lcov"));
+    const fileName = "coverage.lcov";
+    const outFile = fs.createWriteStream(path.join("coverage", fileName));
 
     // WTF? https://github.com/actions/toolkit/issues/649
     const llvmCov = path.join(tooldir, "llvm-cov");
@@ -58,14 +59,14 @@ async function run() {
       silent: true,
       listeners: {
         stdout(data) {
-          lcovFile.write(data);
+          outFile.write(data);
         },
         stderr(data) {
           process.stderr.write(data);
         },
       },
     });
-    lcovFile.close();
+    outFile.close();
   } finally {
     await io.rmRF(doctestDir);
     await io.rmRF(profrawDir);

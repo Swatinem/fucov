@@ -33,7 +33,8 @@ This action basically does all the steps that are described in the [unstable boo
 There are a few known issues around doctests:
 
 - [x] https://github.com/rust-lang/rust/pull/79413
+- [x] https://github.com/rust-lang/rust/pull/79762
 - [ ] https://github.com/rust-lang/rust/issues/79417
 - [ ] https://github.com/rust-lang/rust/issues/79764
 - [ ] https://github.com/rust-lang/rust/pull/79770
-- [ ] https://github.com/rust-lang/cargo/pull/8954
+- ~~[x] https://github.com/rust-lang/cargo/pull/8954~~

@@ -1594,14 +1594,15 @@ async function run() {
             "coverage/coverage.profdata",
         ]);
         const objects = await filterObjects(tooldir, [...(await findTargets()), ...(await findDoctests(doctestDir))]);
-        const lcovFile = fs__WEBPACK_IMPORTED_MODULE_3___default().createWriteStream(path__WEBPACK_IMPORTED_MODULE_5___default().join("coverage", "coverage.lcov"));
+        const fileName = "coverage.html";
+        const outFile = fs__WEBPACK_IMPORTED_MODULE_3___default().createWriteStream(path__WEBPACK_IMPORTED_MODULE_5___default().join("coverage", fileName));
         // WTF? https://github.com/actions/toolkit/issues/649
         const llvmCov = path__WEBPACK_IMPORTED_MODULE_5___default().join(tooldir, "llvm-cov");
         const llvmCovArgs = [
-            "export",
-            "-format=lcov",
-            // "show",
-            // "-format=html",
+            // "export",
+            // "-format=lcov",
+            "show",
+            "-format=html",
             `-ignore-filename-regex=([\\/]rustc[\\/]|[\\/].cargo[\\/]registry[\\/])`,
             "-instr-profile=coverage/coverage.profdata",
             ...objects,
@@ -1611,14 +1612,14 @@ async function run() {
             silent: true,
             listeners: {
                 stdout(data) {
-                    lcovFile.write(data);
+                    outFile.write(data);
                 },
                 stderr(data) {
                     process.stderr.write(data);
                 },
             },
         });
-        lcovFile.close();
+        outFile.close();
     }
     finally {
         await _actions_io__WEBPACK_IMPORTED_MODULE_2__.rmRF(doctestDir);
