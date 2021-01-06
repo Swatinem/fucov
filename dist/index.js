@@ -1594,15 +1594,15 @@ async function run() {
             "coverage/coverage.profdata",
         ]);
         const objects = await filterObjects(tooldir, [...(await findTargets()), ...(await findDoctests(doctestDir))]);
-        const fileName = "coverage.html";
+        const fileName = "coverage.lcov";
         const outFile = fs__WEBPACK_IMPORTED_MODULE_3___default().createWriteStream(path__WEBPACK_IMPORTED_MODULE_5___default().join("coverage", fileName));
         // WTF? https://github.com/actions/toolkit/issues/649
         const llvmCov = path__WEBPACK_IMPORTED_MODULE_5___default().join(tooldir, "llvm-cov");
         const llvmCovArgs = [
-            // "export",
-            // "-format=lcov",
-            "show",
-            "-format=html",
+            "export",
+            "-format=lcov",
+            // "show",
+            // "-format=html",
             `-ignore-filename-regex=([\\/]rustc[\\/]|[\\/].cargo[\\/]registry[\\/])`,
             "-instr-profile=coverage/coverage.profdata",
             ...objects,
