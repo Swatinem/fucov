@@ -7,3 +7,14 @@ runs:
 branding:
   icon: "align-left"
   color: "green"
+
+inputs:
+  args:
+    description: Arguments for the `cargo test` command. Defaults to `--workspace --all-features`.
+    required: false
+  output-format:
+    description: The desired output format. One of `lcov`, `json`, `html` or `profdata`. Defaults to `lcov`.
+    required: false
+  output-filename:
+    description: The desired output filename. Defaults to `coverage/coverage.$ext`, depending on the chosen `output-format`.
+    required: false

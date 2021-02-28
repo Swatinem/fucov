@@ -4,6 +4,7 @@ import * as io from "@actions/io";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import stringArgv from "string-argv";
 
 const PROFILE = "+nightly";
 
@@ -24,10 +25,16 @@ async function run() {
     const libdir = await getCmdOutput("rustc", [PROFILE, "--print", "target-libdir"]);
     const tooldir = path.join(path.dirname(libdir), "bin");
 
-    await exec.exec("cargo", [PROFILE, "test", "--workspace", "--all-features"]);
+    const args = stringArgv(core.getInput("args") || `--workspace --all-features`);
+    await exec.exec("cargo", [PROFILE, "-Zdoctest-in-workspace", "test", ...args]);
+
+    const outputFormat = core.getInput("output-format") || `lcov`;
+    const outputFile = core.getInput("output-filename") || `coverage/coverage.${outputFormat}`;
+
+    const profdataFile = outputFormat == "profdata" ? outputFile : path.join(profrawDir, "coverage.profdata");
 
     try {
-      await fs.promises.mkdir("coverage");
+      await fs.promises.mkdir(path.dirname(outputFile));
     } catch {}
 
     await exec.exec(path.join(tooldir, "llvm-profdata"), [
@@ -35,25 +42,32 @@ async function run() {
       "-sparse",
       ...(await findProfRaw(profrawDir)),
       "-o",
-      "coverage/coverage.profdata",
+      profdataFile,
     ]);
+
+    if (outputFormat == "profdata") {
+      return;
+    }
 
     const objects = await filterObjects(tooldir, [...(await findTargets()), ...(await findDoctests(doctestDir))]);
 
-    const fileName = "coverage.lcov";
-    const outFile = fs.createWriteStream(path.join("coverage", fileName));
+    const outFile = fs.createWriteStream(outputFile);
 
-    // WTF? https://github.com/actions/toolkit/issues/649
+    const formatArgs =
+      outputFormat == "lcov"
+        ? ["export", "-format=lcov"]
+        : outputFormat == "html"
+        ? ["show", "-format=html"]
+        : ["export", "-format=text"];
+
     const llvmCov = path.join(tooldir, "llvm-cov");
     const llvmCovArgs = [
-      "export",
-      "-format=lcov",
-      // "show",
-      // "-format=html",
-      `-ignore-filename-regex=([\\/]rustc[\\/]|[\\/].cargo[\\/]registry[\\/])`,
-      "-instr-profile=coverage/coverage.profdata",
+      ...formatArgs,
+      "-ignore-filename-regex=([\\/]rustc[\\/]|[\\/].cargo[\\/]registry[\\/])",
+      `-instr-profile=${profdataFile}`,
       ...objects,
     ];
+    // WTF? https://github.com/actions/toolkit/issues/649
     core.info(`[command]${llvmCov} ${llvmCovArgs.join(" ")}`);
     await exec.exec(llvmCov, llvmCovArgs, {
       silent: true,
