@@ -9,7 +9,7 @@ import stringArgv from "string-argv";
 const PROFILE = "+nightly";
 
 process.on("uncaughtException", (e) => {
-  core.info(`[warning] ${e.message}`);
+  core.setFailed(e);
 });
 
 async function run() {
@@ -81,6 +81,8 @@ async function run() {
       },
     });
     outFile.close();
+  } catch (e) {
+    core.setFailed(e);
   } finally {
     await io.rmRF(doctestDir);
     await io.rmRF(profrawDir);
