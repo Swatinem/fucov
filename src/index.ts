@@ -138,12 +138,14 @@ async function findTargets(): Promise<Array<string>> {
 
 async function findDoctests(doctestDir: string): Promise<Array<string>> {
   const objects = [];
-  for await (const name of walk(doctestDir)) {
-    const ext = path.extname(name);
-    if (!ext || ext === ".exe") {
-      objects.push(name);
+  try {
+    for await (const name of walk(doctestDir)) {
+      const ext = path.extname(name);
+      if (!ext || ext === ".exe") {
+        objects.push(name);
+      }
     }
-  }
+  } catch {}
   return objects;
 }
 

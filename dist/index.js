@@ -2067,12 +2067,15 @@ async function findTargets() {
 }
 async function findDoctests(doctestDir) {
     const objects = [];
-    for await (const name of walk(doctestDir)) {
-        const ext = path__WEBPACK_IMPORTED_MODULE_5___default().extname(name);
-        if (!ext || ext === ".exe") {
-            objects.push(name);
+    try {
+        for await (const name of walk(doctestDir)) {
+            const ext = path__WEBPACK_IMPORTED_MODULE_5___default().extname(name);
+            if (!ext || ext === ".exe") {
+                objects.push(name);
+            }
         }
     }
+    catch { }
     return objects;
 }
 async function getMetaTargets() {
