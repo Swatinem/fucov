@@ -82,7 +82,7 @@ async function run() {
     });
     outFile.close();
   } catch (e) {
-    core.setFailed(e);
+    core.setFailed(e as any);
   } finally {
     await io.rmRF(doctestDir);
     await io.rmRF(profrawDir);
