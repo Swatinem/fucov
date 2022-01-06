@@ -19,7 +19,7 @@ async function run() {
   core.exportVariable("CARGO_INCREMENTAL", 0);
   core.exportVariable("RUSTFLAGS", "-Z instrument-coverage");
   core.exportVariable("RUSTDOCFLAGS", `-Z instrument-coverage -Z unstable-options --persist-doctests=${doctestDir}`);
-  core.exportVariable("LLVM_PROFILE_FILE", path.join(profrawDir, "%p.profraw"));
+  core.exportVariable("LLVM_PROFILE_FILE", path.join(profrawDir, "%p-%m.profraw"));
 
   try {
     const libdir = await getCmdOutput("rustc", [PROFILE, "--print", "target-libdir"]);
@@ -37,13 +37,26 @@ async function run() {
       await fs.promises.mkdir(path.dirname(outputFile));
     } catch {}
 
-    await exec.exec(path.join(tooldir, "llvm-profdata"), [
-      "merge",
-      "-sparse",
-      ...(await findProfRaw(profrawDir)),
-      "-o",
-      profdataFile,
-    ]);
+    let profRawFiles = await findProfRaw(profrawDir);
+
+    let batches = 0;
+    const batchSize = 20;
+    for (let i = 0; i < profRawFiles.length; i += batchSize) {
+      batches += 1;
+      await exec.exec(path.join(tooldir, "llvm-profdata"), [
+        "merge",
+        "-sparse",
+        ...profRawFiles.slice(i, i + batchSize),
+        "-o",
+        `${profdataFile}-${batches}`,
+      ]);
+    }
+    if (batches > 1) {
+      let batchFiles = Array.from(Array(batches), (_, i) => `${profdataFile}-${i + 1}`);
+      await exec.exec(path.join(tooldir, "llvm-profdata"), ["merge", "-sparse", ...batchFiles, "-o", profdataFile]);
+    } else {
+      await fs.promises.rename(`${profdataFile}-${batches}`, profdataFile);
+    }
 
     if (outputFormat == "profdata") {
       return;

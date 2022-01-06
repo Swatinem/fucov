@@ -3092,7 +3092,7 @@ async function run() {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("CARGO_INCREMENTAL", 0);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("RUSTFLAGS", "-Z instrument-coverage");
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("RUSTDOCFLAGS", `-Z instrument-coverage -Z unstable-options --persist-doctests=${doctestDir}`);
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("LLVM_PROFILE_FILE", path__WEBPACK_IMPORTED_MODULE_5___default().join(profrawDir, "%p.profraw"));
+    _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("LLVM_PROFILE_FILE", path__WEBPACK_IMPORTED_MODULE_5___default().join(profrawDir, "%p-%m.profraw"));
     try {
         const libdir = await getCmdOutput("rustc", [PROFILE, "--print", "target-libdir"]);
         const tooldir = path__WEBPACK_IMPORTED_MODULE_5___default().join(path__WEBPACK_IMPORTED_MODULE_5___default().dirname(libdir), "bin");
@@ -3105,13 +3105,26 @@ async function run() {
             await fs__WEBPACK_IMPORTED_MODULE_3___default().promises.mkdir(path__WEBPACK_IMPORTED_MODULE_5___default().dirname(outputFile));
         }
         catch { }
-        await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec(path__WEBPACK_IMPORTED_MODULE_5___default().join(tooldir, "llvm-profdata"), [
-            "merge",
-            "-sparse",
-            ...(await findProfRaw(profrawDir)),
-            "-o",
-            profdataFile,
-        ]);
+        let profRawFiles = await findProfRaw(profrawDir);
+        let batches = 0;
+        const batchSize = 10;
+        for (let i = 0; i < profRawFiles.length; i += batchSize) {
+            batches += 1;
+            await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec(path__WEBPACK_IMPORTED_MODULE_5___default().join(tooldir, "llvm-profdata"), [
+                "merge",
+                "-sparse",
+                ...profRawFiles.slice(i, i + batchSize),
+                "-o",
+                `${profdataFile}-${batches}`,
+            ]);
+        }
+        if (batches > 1) {
+            let batchFiles = Array.from(Array(batches), (_, i) => `${profdataFile}-${i + 1}`);
+            await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec(path__WEBPACK_IMPORTED_MODULE_5___default().join(tooldir, "llvm-profdata"), ["merge", "-sparse", ...batchFiles, "-o", profdataFile]);
+        }
+        else {
+            await fs__WEBPACK_IMPORTED_MODULE_3___default().promises.rename(`${profdataFile}-${batches}`, profdataFile);
+        }
         if (outputFormat == "profdata") {
             return;
         }
