@@ -3082,7 +3082,6 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 
-const PROFILE = "+nightly";
 process.on("uncaughtException", (e) => {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(e);
 });
@@ -3093,11 +3092,13 @@ async function run() {
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("RUSTFLAGS", "-Z instrument-coverage");
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("RUSTDOCFLAGS", `-Z instrument-coverage -Z unstable-options --persist-doctests=${doctestDir}`);
     _actions_core__WEBPACK_IMPORTED_MODULE_0__.exportVariable("LLVM_PROFILE_FILE", path__WEBPACK_IMPORTED_MODULE_5___default().join(profrawDir, "%p-%m.profraw"));
+    const toolchain_ = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("toolchain");
+    const toolchain = toolchain_ ? [toolchain_] : [];
     try {
-        const libdir = await getCmdOutput("rustc", [PROFILE, "--print", "target-libdir"]);
+        const libdir = await getCmdOutput("rustc", [...toolchain, "--print", "target-libdir"]);
         const tooldir = path__WEBPACK_IMPORTED_MODULE_5___default().join(path__WEBPACK_IMPORTED_MODULE_5___default().dirname(libdir), "bin");
         const args = (0,string_argv__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .ZP)(_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("args") || `--workspace --all-features`);
-        await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec("cargo", [PROFILE, "-Zdoctest-in-workspace", "test", ...args]);
+        await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec("cargo", [...toolchain, "-Zdoctest-in-workspace", "test", ...args]);
         const outputFormat = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("output-format") || `lcov`;
         const outputFile = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("output-filename") || `coverage/coverage.${outputFormat}`;
         const profdataFile = outputFormat == "profdata" ? outputFile : path__WEBPACK_IMPORTED_MODULE_5___default().join(profrawDir, "coverage.profdata");
@@ -3107,7 +3108,7 @@ async function run() {
         catch { }
         let profRawFiles = await findProfRaw(profrawDir);
         let batches = 0;
-        const batchSize = 10;
+        const batchSize = 20;
         for (let i = 0; i < profRawFiles.length; i += batchSize) {
             batches += 1;
             await _actions_exec__WEBPACK_IMPORTED_MODULE_1__.exec(path__WEBPACK_IMPORTED_MODULE_5___default().join(tooldir, "llvm-profdata"), [
@@ -3128,7 +3129,10 @@ async function run() {
         if (outputFormat == "profdata") {
             return;
         }
-        const objects = await filterObjects(tooldir, [...(await findTargets()), ...(await findDoctests(doctestDir))]);
+        const objects = await filterObjects(tooldir, [
+            ...(await findTargets(toolchain)),
+            ...(await findDoctests(doctestDir)),
+        ]);
         const outFile = fs__WEBPACK_IMPORTED_MODULE_3___default().createWriteStream(outputFile);
         const formatArgs = outputFormat == "lcov"
             ? ["export", "-format=lcov"]
@@ -3188,8 +3192,8 @@ async function findProfRaw(profrawDir) {
     }
     return files;
 }
-async function findTargets() {
-    const targets = new Set(await getMetaTargets());
+async function findTargets(toolchain) {
+    const targets = new Set(await getMetaTargets(toolchain));
     const objects = [];
     const dir = await fs__WEBPACK_IMPORTED_MODULE_3___default().promises.opendir("./target/debug/deps");
     for await (const dirent of dir) {
@@ -3221,9 +3225,9 @@ async function findDoctests(doctestDir) {
     catch { }
     return objects;
 }
-async function getMetaTargets() {
+async function getMetaTargets(toolchain) {
     const cwd = process.cwd();
-    const meta = JSON.parse(await getCmdOutput("cargo", [PROFILE, "metadata", "--all-features", "--format-version=1"]));
+    const meta = JSON.parse(await getCmdOutput("cargo", [...toolchain, "metadata", "--all-features", "--format-version=1"]));
     return meta.packages
         .filter((p) => p.manifest_path.startsWith(cwd))
         .flatMap((p) => {

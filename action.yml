@@ -12,6 +12,9 @@ inputs:
   args:
     description: Arguments for the `cargo test` command. Defaults to `--workspace --all-features`.
     required: false
+  toolchain:
+    description: The rust toolchain to use. Defaults to current active toolchain.
+    required: false
   output-format:
     description: The desired output format. One of `lcov`, `json`, `html` or `profdata`. Defaults to `lcov`.
     required: false

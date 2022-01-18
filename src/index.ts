@@ -6,8 +6,6 @@ import os from "os";
 import path from "path";
 import stringArgv from "string-argv";
 
-const PROFILE = "+nightly";
-
 process.on("uncaughtException", (e) => {
   core.setFailed(e);
 });
@@ -21,12 +19,15 @@ async function run() {
   core.exportVariable("RUSTDOCFLAGS", `-Z instrument-coverage -Z unstable-options --persist-doctests=${doctestDir}`);
   core.exportVariable("LLVM_PROFILE_FILE", path.join(profrawDir, "%p-%m.profraw"));
 
+  const toolchain_ = core.getInput("toolchain");
+  const toolchain = toolchain_ ? [toolchain_] : [];
+
   try {
-    const libdir = await getCmdOutput("rustc", [PROFILE, "--print", "target-libdir"]);
+    const libdir = await getCmdOutput("rustc", [...toolchain, "--print", "target-libdir"]);
     const tooldir = path.join(path.dirname(libdir), "bin");
 
     const args = stringArgv(core.getInput("args") || `--workspace --all-features`);
-    await exec.exec("cargo", [PROFILE, "-Zdoctest-in-workspace", "test", ...args]);
+    await exec.exec("cargo", [...toolchain, "-Zdoctest-in-workspace", "test", ...args]);
 
     const outputFormat = core.getInput("output-format") || `lcov`;
     const outputFile = core.getInput("output-filename") || `coverage/coverage.${outputFormat}`;
@@ -62,7 +63,10 @@ async function run() {
       return;
     }
 
-    const objects = await filterObjects(tooldir, [...(await findTargets()), ...(await findDoctests(doctestDir))]);
+    const objects = await filterObjects(tooldir, [
+      ...(await findTargets(toolchain)),
+      ...(await findDoctests(doctestDir)),
+    ]);
 
     const outFile = fs.createWriteStream(outputFile);
 
@@ -127,8 +131,8 @@ async function findProfRaw(profrawDir: string): Promise<Array<string>> {
   return files;
 }
 
-async function findTargets(): Promise<Array<string>> {
-  const targets = new Set(await getMetaTargets());
+async function findTargets(toolchain: Array<string>): Promise<Array<string>> {
+  const targets = new Set(await getMetaTargets(toolchain));
 
   const objects = [];
   const dir = await fs.promises.opendir("./target/debug/deps");
@@ -171,10 +175,10 @@ interface Meta {
   }>;
 }
 
-async function getMetaTargets(): Promise<Array<string>> {
+async function getMetaTargets(toolchain: Array<string>): Promise<Array<string>> {
   const cwd = process.cwd();
   const meta: Meta = JSON.parse(
-    await getCmdOutput("cargo", [PROFILE, "metadata", "--all-features", "--format-version=1"]),
+    await getCmdOutput("cargo", [...toolchain, "metadata", "--all-features", "--format-version=1"]),
   );
 
   return meta.packages
