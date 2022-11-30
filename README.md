@@ -1,3 +1,13 @@
+# Unmaintained / Abandoned / Deprecated
+
+I will not be maintaining / updating `fucov` going forward.
+
+You should use [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov) instead,
+which is maintained, more feature complete and has a better user experience throughout.
+It also has very good integration with CI / GitHub Actions.
+
+---
+
 # fucov
 
 A GitHub Action that does single-action code coverage generation.
